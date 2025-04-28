@@ -7,7 +7,6 @@ from scipy.signal import find_peaks
 
 GUARANTEED_PULLS = sorted({60, 120, 180, 240, 300, 500, 580, 660, 740, 820, 1100, 1200, 1300, 1400, 1500})
 MAX_GUARANTEED_CARDS = len(GUARANTEED_PULLS)
-NUM_SIMULATIONS = 100000      # Number of simulations, change as needed
 PULL_COST = 300
 
 def simulate_single_hero(souls_needed):
@@ -84,15 +83,15 @@ def simulate_two_heroes(souls_hero1, souls_hero2):
 def get_top_spikes(pulls_results, num_spikes=3):
     counts, bins = np.histogram(pulls_results, bins=50)
     bin_centers = (bins[:-1] + bins[1:]) / 2
-    peaks, _ = find_peaks(counts, prominence=500)
+    peaks, _ = find_peaks(counts, prominence=250)
     top_peaks = sorted(peaks, key=lambda p: counts[p], reverse=True)[:num_spikes]
-    return [(int(bin_centers[p]), counts[p]) for p in top_peaks]
+    return [(int(bin_centers[p]), counts[p]) for p in top_peaks] if top_peaks else []
 
 def print_top_spikes(spike_data, souls_needed):
     labels = ["Most likely", "Second most likely", "Third most likely"]
     data = [
         (labels[i], pulls, pulls * PULL_COST, souls_needed)
-        for i, (pulls, _) in enumerate(spike_data)
+        for i, (pulls, _) in enumerate(spike_data[:len(labels)])
     ]
     headers = ["Spike", "Pulls", "Diamond Cost", "Souls"]
     print(tabulate(data, headers=headers, tablefmt="grid", colalign=("left", "center", "center", "center")))
@@ -126,16 +125,32 @@ def print_best_worst_case(pulls):
     print(f"\nBest Case:\t {best_case} pulls → {best_case * PULL_COST} Diamonds")
     print(f"Worst Case:\t {worst_case} pulls → {worst_case * PULL_COST} Diamonds")
 
+def get_valid_input(prompt, default, min_value=1):
+    try:
+        value = int(input(prompt).strip())
+        if value < min_value:
+            print(f"Value too small. Using minimum value of {min_value}.")
+            return min_value
+        return value
+    except ValueError:
+        print(f"Invalid input. Using default value of {default}.")
+        return default
+
 
 if __name__ == "__main__":
-    mode = input("Simulate for 1 or 2 heroes? Enter 1 or 2: ").strip()
+    NUM_SIMULATIONS = get_valid_input("(For more accurate results use 100000+)\n"
+                                    "(!NOTE!: over 100k+ Simulations could take a while with old CPUs)\n"
+                                    "Please type the Number of Simulations (Default: 10000): ",10000, 10000)
+
+    mode = input("\nSimulation for 1 or 2 Heroes?\n"
+                 "Enter 1 or 2: ").strip()
 
     if mode == "1":
-        souls = int(input("Souls needed for the hero: "))
-        print(f"\nRunning simulation for 1 hero ({souls} souls)...")
+        souls = int(input("Souls needed for Hero (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
+        print(f"\nSimulation for 1 Hero ({souls} Souls) is executed...")
         start = time.time()
         pulls = [simulate_single_hero(souls) for _ in range(NUM_SIMULATIONS)]
-        print(f"Done after {time.time() - start:.2f} seconds.\n")
+        print(f"Done in {time.time() - start:.2f} Seconds.\n")
 
         spike_data = get_top_spikes(pulls)
         print_top_spikes(spike_data, souls)
@@ -143,13 +158,13 @@ if __name__ == "__main__":
         print_best_worst_case(pulls)
 
     elif mode == "2":
-        s1 = int(input("Souls needed for Hero 1: "))
-        s2 = int(input("Souls needed for Hero 2: "))
+        s1 = int(input("Souls needed for Hero 1 (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
+        s2 = int(input("Souls needed for Hero 2 (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
         total = s1 + s2
-        print(f"\nRunning simulation for 2 heroes ({total} souls total)...")
+        print(f"\nSimulation for 2 Heroes ({total} Souls total) is executed...")
         start = time.time()
         pulls = [simulate_two_heroes(s1, s2) for _ in range(NUM_SIMULATIONS)]
-        print(f"Done after {time.time() - start:.2f} sec.\n")
+        print(f"Done in {time.time() - start:.2f} Seconds.\n")
 
         spike_data = get_top_spikes(pulls)
         print_top_spikes(spike_data, total)
