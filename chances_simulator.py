@@ -7,74 +7,50 @@ from scipy.signal import find_peaks
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 
-GUARANTEED_PULLS = sorted({60, 120, 180, 240, 300, 500, 580, 660, 740, 820,
-                            1100, 1200, 1300, 1400, 1500})
+GUARANTEED_PULLS = sorted({60, 120, 180, 240, 300, 500, 580, 660, 740, 820, 1100, 1200, 1300, 1400, 1500})
 PULL_COST = 300
 
-def simulate_single_hero(souls_needed):
+def simulate_hero_pulls(souls_needed_list):
     pulls = 0
-    hero_souls = 0
     pity_counter = 0
     used_milestones = set()
+    souls = [0 for _ in souls_needed_list] # Initialize soul counters for each hero
 
-    while hero_souls < souls_needed:
-        pulls += 1
-        pity_counter += 1
+    # Helper function to give a soul to the first hero who still needs one
+    def add_soul():
+        for i in range(len(souls)):
+            if souls[i] < souls_needed_list[i]:
+                souls[i] += 1
+                break
 
-        got_hero = False
-        if random.random() < 0.02:
-            got_hero = True
-        elif pity_counter >= 60:
-            got_hero = True
-
-        if got_hero:
-            hero_souls += 1
-            pity_counter = 0
-
-        if pulls in GUARANTEED_PULLS and pulls not in used_milestones:
-            hero_souls += 1
-            used_milestones.add(pulls)
-
-    return pulls
-
-def simulate_two_heroes(souls_hero1, souls_hero2):
-    pulls = 0
-    h1, h2 = 0, 0
-    pity_counter = 0
-    used_milestones = set()
-
-    while h1 < souls_hero1 or h2 < souls_hero2:
+    # Continue pulling until all heroes have their required souls
+    while any(s < needed for s, needed in zip(souls, souls_needed_list)):
         pulls += 1
         pity_counter += 1
         got_hero = False
 
+        # 2% Drop Chance
         if random.random() < 0.02:
             got_hero = True
+
+        # Pity system: guaranteed drop every 60 pulls
         elif pity_counter >= 60:
             got_hero = True
 
+        # Got a hero: assign soul and reset pity
         if got_hero:
-            if h1 < souls_hero1:
-                h1 += 1
-            elif h2 < souls_hero2:
-                h2 += 1
+            add_soul()
             pity_counter = 0
 
+        # Bonus-Milestone: extra soul at predefined pull intervals
         if pulls in GUARANTEED_PULLS and pulls not in used_milestones:
-            if h1 < souls_hero1:
-                h1 += 1
-            elif h2 < souls_hero2:
-                h2 += 1
+            add_soul()
             used_milestones.add(pulls)
 
     return pulls
 
 def simulate_single_run(args):
-    souls_needed, is_duo, hero2 = args
-    if is_duo:
-        return simulate_two_heroes(souls_needed, hero2)
-    else:
-        return simulate_single_hero(souls_needed)
+    return simulate_hero_pulls(args)
 
 def get_top_spikes(pulls_results, num_spikes=3):
     counts, bins = np.histogram(pulls_results, bins=50)
@@ -133,38 +109,36 @@ def get_valid_input(prompt, default, min_value=1):
 
 if __name__ == "__main__":
     NUM_SIMULATIONS = get_valid_input("(For more accurate results use 100000+)\n"
-                                      "(!NOTE!: over 100k+ Simulations could take a while with old CPUs)\n"
-                                      "Please type the Number of Simulations (Default: 10000): ", 10000, 10000)
+                                       "(!NOTE!: over 100k+ Simulations could take a while with old CPUs)\n"
+                                       "Please type the Number of Simulations (Default: 10000): ", 10000, 10000)
 
     mode = input("\nSimulation for 1 or 2 Heroes?\nEnter 1 or 2: ").strip()
 
     if mode == "1":
-        souls = int(input("Souls needed for Hero (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
+        souls = get_valid_input("Souls needed for Hero (14 Souls = Ascended, 24 Souls = Ascended 5*): ", 14)
         print(f"\nSimulation for 1 Hero ({souls} Souls) is executed...")
         start = time.time()
-
         with Pool(cpu_count()) as pool:
-            pulls = list(tqdm(pool.imap_unordered(simulate_single_hero, [souls] * NUM_SIMULATIONS),
+            pulls = list(tqdm(pool.imap_unordered(simulate_single_run, [[souls]] * NUM_SIMULATIONS),
                               total=NUM_SIMULATIONS, desc="Simulating"))
-
         print(f"Done in {time.time() - start:.2f} Seconds.\n")
+
         spike_data = get_top_spikes(pulls)
         print_top_spikes(spike_data, souls)
         plot_histogram_with_top3_spikes(pulls, spike_data)
         print_best_worst_case(pulls)
 
     elif mode == "2":
-        s1 = int(input("Souls needed for Hero 1 (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
-        s2 = int(input("Souls needed for Hero 2 (14 Souls = Ascended, 24 Souls = Ascended 5*): "))
+        s1 = get_valid_input("Souls needed for Hero 1 (14 Souls = Ascended, 24 Souls = Ascended 5*): ", 14)
+        s2 = get_valid_input("Souls needed for Hero 2 (14 Souls = Ascended, 24 Souls = Ascended 5*): ", 14)
         total = s1 + s2
         print(f"\nSimulation for 2 Heroes ({total} Souls total) is executed...")
         start = time.time()
-
         with Pool(cpu_count()) as pool:
-            pulls = list(tqdm(pool.imap_unordered(simulate_single_run, [(s1, True, s2)] * NUM_SIMULATIONS),
+            pulls = list(tqdm(pool.imap_unordered(simulate_single_run, [[s1, s2]] * NUM_SIMULATIONS),
                               total=NUM_SIMULATIONS, desc="Simulating"))
-
         print(f"Done in {time.time() - start:.2f} Seconds.\n")
+
         spike_data = get_top_spikes(pulls)
         print_top_spikes(spike_data, total)
         plot_histogram_with_top3_spikes(pulls, spike_data)
