@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 from scipy.signal import find_peaks
 from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
 
 GUARANTEED_PULLS = sorted({60, 120, 180, 240, 300, 500, 580, 660, 740, 820,
                             1100, 1200, 1300, 1400, 1500})
@@ -143,7 +144,8 @@ if __name__ == "__main__":
         start = time.time()
 
         with Pool(cpu_count()) as pool:
-            pulls = pool.map(simulate_single_hero, [souls] * NUM_SIMULATIONS)
+            pulls = list(tqdm(pool.imap_unordered(simulate_single_hero, [souls] * NUM_SIMULATIONS),
+                              total=NUM_SIMULATIONS, desc="Simulating"))
 
         print(f"Done in {time.time() - start:.2f} Seconds.\n")
         spike_data = get_top_spikes(pulls)
@@ -159,7 +161,8 @@ if __name__ == "__main__":
         start = time.time()
 
         with Pool(cpu_count()) as pool:
-            pulls = pool.map(simulate_single_run, [(s1, True, s2)] * NUM_SIMULATIONS)
+            pulls = list(tqdm(pool.imap_unordered(simulate_single_run, [(s1, True, s2)] * NUM_SIMULATIONS),
+                              total=NUM_SIMULATIONS, desc="Simulating"))
 
         print(f"Done in {time.time() - start:.2f} Seconds.\n")
         spike_data = get_top_spikes(pulls)
