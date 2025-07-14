@@ -195,7 +195,6 @@ def run_fixed_pulls_simulation():
     plt.xlabel("Souls Obtained")
     plt.ylabel("Frequency")
     plt.grid(True)
-    plt.savefig("example_pulls.png")
     plt.show()
 
     print(f"\nSimulation completed in {time.time() - start:.2f} Seconds.\n")
