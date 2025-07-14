@@ -18,4 +18,6 @@ env/
 
 # Output files
 *.png
+!example_souls.png
+!example_pulls.png
 *.log
