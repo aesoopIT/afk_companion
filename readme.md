@@ -1,14 +1,25 @@
 # AFK Arena Dimensional Pull Simulator
 
 This is a simulation tool for the mobile game **AFK Arena**.  
-It estimates how many **destiny scrolls (pulls)** you'll need to collect a specified number of **dimensional hero souls**, using real drop rates, pity logic, and milestone bonuses.
+It estimates how many **destiny scrolls (pulls)** you'll need to collect a specified number of **dimensional hero souls**, using realistic mechanics like:
 
-It supports:
-- Single and dual hero simulations
-- Statistical summaries
-- Visualizations with spike detection
-- Multiprocessing for performance
-- Progress bar feedback
+- **2% drop rate**
+- **Pity counter (guaranteed pull every 60)**
+- **Milestone soul bonuses at fixed intervals**
+
+---
+
+## Features
+
+- Supports **single and dual hero** simulations  
+- Simulates how many pulls you need for souls, or how many souls you get from your pulls  
+- Statistical summary: **best**, **worst**, and **average**  
+- Highlights top 3 most likely pull outcomes (**spikes**)  
+- Multiprocessing for speed  
+- Real-time **progress bar** with `tqdm`  
+- Graphical output via **matplotlib**
+
+---
 
 ## Required Python Packages
 
@@ -24,18 +35,52 @@ pip install numpy matplotlib tabulate scipy tqdm
 3. Install the required Python packages as listed above.
 
 You will be prompted to:
-- Choose 1 or 2 hero simulations
-- Enter how many souls each hero needs
-- Select how many simulations to run (e.g., 100000)
+- Select simulation mode:  
+    1 = Target Souls (you choose how many souls you want)  
+    2 = Fixed Pulls (you input how many scrolls/diamonds you have)
+- Enter number of heroes (1 or 2)
+- Enter number of souls required
+- Set the number of simulations (e.g., 100000 for better accuracy)
 
-### Features
-- Simulates the number of pulls required to collect dimensional souls.
-- Provides a histogram visualization of the simulation results.
-- Highlights the top 3 most likely pull counts (spikes).
-- Displays best and worst-case scenarios.
+---
 
-### Example Output
-![Histogram Screenshot](example_output.png)
+## Example Outputs
+### Mode 1: Target Souls Mode
+This mode calculates how many pulls are needed to collect 46 dimensional hero souls,
+also enough souls for both heroes to reach Ascended 5*.  
+
+**Settings:**
+- 46 total souls (e.g., 2 heroes with 23 each)
+- 100,000,000 simulations
+
+**Output:** 
+
+| Spike              | Pulls | Diamond Cost | Souls |
+|--------------------|:-----:|:------------:|:-----:|
+| Most likely        | 1204  |   361200     |  46   |
+| Second most likely | 1291  |   387300     |  46   |
+| Third most likely  | 1096  |   328800     |  46   |
+
+
+![Histogram Screenshot](example_souls.png)
+
+---
+
+### Mode 2: Fixed Pulls Mode
+This mode simulates how many souls you can get with your current resources.
+
+**Settings:**
+
+- 200 destiny scrolls + 200,000 diamonds = 866 pulls
+- 1,000,000 simulations
+
+**Output:**  
+
+| Pulls | Avg Souls | Min Souls | Max Souls |
+|:-----:|:---------:|:---------:|:---------:|
+|  866  |   34.35   |     24    |     52    |
+
+![Histogram Screenshot](example_pulls.png)
 
 ---
 ## License
