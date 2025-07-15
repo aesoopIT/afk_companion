@@ -97,20 +97,20 @@ def print_top_spikes(spike_data, souls_needed):
 def plot_histogram_with_top3_spikes(pulls_results, spike_data):
     counts, bins = np.histogram(pulls_results, bins=50)
     bin_centers = (bins[:-1] + bins[1:]) / 2
-    max_height = max(counts)
+    percentages = (counts / sum(counts)) * 100  # Convert to %
 
     plt.figure(figsize=(10, 6))
-    plt.bar(bin_centers, counts, width=(bins[1] - bins[0]), edgecolor='black', alpha=0.7)
-    plt.ylim(top=max_height * 1.5)
+    plt.bar(bin_centers, percentages, width=(bins[1] - bins[0]), edgecolor='black', alpha=0.7)
+    plt.ylim(top=max(percentages) * 1.5)
 
     for i, (x, _) in enumerate(spike_data):
         label = f"Spike {i+1}: {x} Pulls"
         plt.axvline(x, linestyle='--', color='purple', linewidth=1, label=label)
-        plt.text(x, max_height * 1.05, label, rotation=90, color='purple', ha='center')
+        plt.text(x, max(percentages) * 1.05, label, rotation=90, color='purple', ha='center')
 
     plt.title("Simulation Result Histogram (Top 3 Spikes)")
     plt.xlabel("Number of Pulls")
-    plt.ylabel("Frequency")
+    plt.ylabel("Percentage (%)")  # Changed from "Frequency"
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
@@ -190,10 +190,12 @@ def run_fixed_pulls_simulation():
     print(f"  Min Souls: {min_souls}")
     print(f"  Max Souls: {max_souls}")
 
-    plt.hist(results, bins=range(0, max_souls+2), alpha=0.7, edgecolor='black')
+    plt.hist(results, bins=range(0, max_souls + 2),
+             weights=np.ones_like(results) / len(results) * 100,
+             alpha=0.7, edgecolor='black')
     plt.title("Distribution of Dimensional Souls")
     plt.xlabel("Souls Obtained")
-    plt.ylabel("Frequency")
+    plt.ylabel("Percentage (%)")
     plt.grid(True)
     plt.show()
 
